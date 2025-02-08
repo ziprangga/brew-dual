@@ -1,0 +1,325 @@
+#!/usr/bin/env bash
+
+# ====== Global Variables ======
+VERSION="1.0.0"
+RELEASE_DATE="2025-02-08"
+BREW_DUAL_REPO="https://github.com/yourusername/brew-dual"
+HOMEBREW_INSTALL_SCRIPT="https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh"
+VERBOSE=false
+DEBUG=false
+X86_BREW="/usr/local/bin/brew"
+ARM_BREW="/opt/homebrew/bin/brew"
+readonly BASE_COMMAND="brew-dual"
+readonly commands=("install" "uninstall" "update" "upgrade" "list" "pin" "unpin" "outdated" "info" "version" "check-homebrew" "help")
+readonly X86_ARCH="arch -x86_64"
+readonly ARM_ARCH="arch -arm64"
+
+# ====== Logging & Message ======
+log() {
+    local color_reset="\033[0m"
+    local color_info="\033[0;32m"   
+    local color_warn="\033[0;33m"  
+    local color_error="\033[0;31m"  
+    local prefix="[$BASE_COMMAND]"
+
+    # Skip logging if DEBUG mode is off
+    if [[ "$DEBUG" != "true" && "$1" != "ERROR" ]]; then
+        return
+    fi
+
+    # Determine log level color
+    case "$1" in
+        INFO)    echo -e "${prefix} ${color_info}$2${color_reset}" ;;
+        WARN)    echo -e "${prefix} ${color_warn}$2${color_reset}" ;;
+        ERROR)   echo -e "${prefix} ${color_error}$2${color_reset}" ;;
+        *)       echo -e "${prefix} $1" ;;
+    esac
+
+    # Verbose mode (always print additional debug info)
+    if [ "$VERBOSE" = true ]; then
+        echo -e "[VERBOSE] $1" >&2
+    fi
+}
+
+color_echo() {
+    local color_reset="\033[0m"
+    local color_info="\033[0;32m"
+    local color_warn="\033[0;33m"
+    local color_error="\033[0;31m"
+    local color_debug="\033[0;34m"
+    local message_type="$1"
+    shift 
+
+    case "$message_type" in
+        INFO)    echo -e "${color_info}$@${color_reset}" ;;
+        WARN)    echo -e "${color_warn}$@${color_reset}" ;;
+        ERROR)   echo -e "${color_error}$@${color_reset}" ;;
+        DEBUG)   echo -e "${color_debug}$@${color_reset}" ;;
+        *)       echo -e "$@" ;;
+    esac
+}
+
+# ====== Load Core Script ======
+load_core_script() {
+    local SCRIPT_NAME="$1"
+    local CORE_DIR="$(dirname "${BASH_SOURCE[0]}")/../libexec"
+    local SCRIPT_PATH="$CORE_DIR/$SCRIPT_NAME"
+
+    if [[ -f "$SCRIPT_PATH" ]]; then
+        log "INFO" "Loading core script: $SCRIPT_PATH"
+        source "$SCRIPT_PATH"
+    else
+        log "ERROR" "Core script '$SCRIPT_NAME' not found in $CORE_DIR"
+        exit 1
+    fi
+}
+
+# ====== Parse Global Options ======
+parse_global_options() {
+    REMAINING_ARGS=()
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            --verbose) VERBOSE=true ;;
+            --debug) DEBUG=true ;;
+            --update)
+                self-update_command
+                exit 0
+                ;;
+            --help)
+                help_command
+                exit 0
+                ;;
+            -*)
+                echo "Unknown option: $1" >&2
+                exit 1
+                ;;
+            *) REMAINING_ARGS+=("$1") ;;
+        esac
+        shift
+    done
+}
+
+install_command() {
+    # Ensure at least one package name is provided
+    if [ "$#" -eq 0 ]; then
+        echo "Usage: brew dual install <package_name> [package_name ...]"
+        exit 1
+    fi
+    
+    if ! declare -F brew-dual-install >/dev/null; then
+        log "Loading core script for install package"
+        load_core_script "brew-dual-install"
+    fi
+
+    brew_dual_install "$@"
+    
+    color_echo "INFO" "✅ Package sync complete!"
+}
+
+uninstall_command() {
+
+    # Ensure at least one package name is provided
+    if [ "$#" -eq 0 ]; then
+        echo "Usage: brew dual uninstall <package_name> [package_name ...]"
+        exit 1
+    fi
+
+    if ! declare -F brew-dual-uninstall >/dev/null; then
+        log "Loading core script for uninstall package"
+        load_core_script "brew-dual-uninstall"
+    fi
+
+    brew_dual_uninstall "$@"
+    
+}
+
+upgrade_command() {
+
+    if [ "$#" -eq 0 ]; then
+        color_echo "INFO" "Upgrade ARM Homebrew all package"
+        $ARM_ARCH "$ARM_BREW" upgrade
+
+        color_echo "INFO" "Upgrade X86 Homebrew all package"
+        $X86_ARCH "$X86_BREW" upgrade
+
+        color_echo "INFO" "✅ Upgrade complete!"
+    else
+        color_echo "INFO" "Upgrade $@"
+        if ! declare -F brew-dual-upgrade >/dev/null; then
+            log "Loading core script for upgrade package"
+            load_core_script "brew-dual-upgrade"
+        fi
+
+        brew_dual_upgrade "$@"
+        
+    fi
+
+}
+
+pin_command() {
+    local pin=true
+
+    # Ensure at least one package name is provided
+    if [ "$#" -eq 0 ]; then
+        echo "Usage: brew dual pin <package_name> [package_name ...]"
+        exit 1
+    fi
+
+    if ! declare -F brew-dual-pin-unpin >/dev/null; then
+        log "Loading core script for upgrade package"
+        load_core_script "brew-dual-pin-unpin"
+    fi
+
+    brew_dual_pin_unpin "$pin" "$@"
+
+}
+
+unpin_command() {
+    local pin=false
+
+    # Ensure at least one package name is provided
+    if [ "$#" -eq 0 ]; then
+        echo "Usage: brew dual pin <package_name> [package_name ...]"
+        exit 1
+    fi
+
+    if ! declare -F brew-dual-pin-unpin >/dev/null; then
+        log "Loading core script for upgrade package"
+        load_core_script "brew-dual-pin-unpin"
+    fi
+
+    brew_dual_pin_unpin "$pin" "$@"
+
+}
+
+update_command(){
+    color_echo "INFO" "Update ARM Homebrew"
+    $ARM_ARCH "$ARM_BREW" update
+
+    color_echo "INFO" "Update X86 Homebrew"
+    $X86_ARCH "$X86_BREW" update
+
+    color_echo "INFO" "Update complete"
+}
+
+outdated_command(){
+    color_echo "INFO" "List Outdated package on ARM Homebrew"
+    $ARM_ARCH "$ARM_BREW" outdated
+
+    color_echo "INFO" "List Outdated package on X86 Homebrew"
+    $X86_ARCH "$X86_BREW" outdated
+
+}
+
+info_command() {
+   # Ensure at least one package name is provided
+    if [ "$#" -eq 0 ]; then
+        color_echo "INFO" "Usage: brew dual info <package_name> [package_name ...]"
+        exit 1
+    fi
+
+    if ! declare -F brew-dual-info >/dev/null; then
+        log "Loading core script for info package"
+        load_core_script "brew-dual-info"
+    fi
+
+    brew_dual_info "$@"
+}
+
+list_command() {
+    color_echo "INFO" "Listing installed packages on ARM Homebrew:"
+    $ARM_ARCH "$ARM_BREW" list
+    
+    color_echo "INFO" "Listing installed packages on x86 Homebrew:"
+    $X86_ARCH "$X86_BREW" list
+}
+
+version_command() {
+    color_echo "INFO" "brew-dual version $VERSION"
+    color_echo "INFO" "Released: $RELEASE_DATE"
+    color_echo "INFO" "Author: zi"
+}
+
+self-update_command() {
+    if ! declare -F brew-dual-self-update >/dev/null; then
+        log "Loading for update brew-dual"
+        load_core_script "brew-dual-self-update"
+    fi
+
+    brew_dual_self_update
+}
+
+check-homebrew_command() {
+
+    if ! declare -F brew-dual-check-homebrew >/dev/null; then
+        log "Loading for update brew-dual"
+        load_core_script "brew-dual-check-homebrew"
+    fi
+
+    brew_dual_check_homebrew
+}
+
+help_command() {
+    color_echo "INFO" "Available commands:"
+    for cmd in "${commands[@]}"; do
+        color_echo "INFO" "  $cmd"
+    done
+    echo ""
+    echo "$BASE_COMMAND: A tool for managing packages on dual Homebrew installations."
+    echo "Usage: $BASE_COMMAND [global-options] <command> [package]"
+    echo ""
+    echo "Global Options:"
+    echo "  --verbose         Enable verbose output"
+    echo "  --update          Update brew-dual plugin"
+    echo "  --help            Show this help message"
+    echo ""
+    echo "Commands:"
+    echo "  install <package>  Install a package on both Homebrew installations"
+    echo "  uninstall <package> Remove a package from both Homebrew installations"
+    echo "  update             Update Homebrew on both architectures"
+    echo "  outdated           List outdated package installed on both architectures of Homebrew"
+    echo "  upgrade            Upgrade all packages on both architectures"
+    echo "  upgrade <package>  Upgrade packages on both architectures"
+    echo "  list               List installed packages on both architectures"
+    echo "  check-homebrew     Check Homebrew and install Homebrew on both architectures"
+    echo "  help               Show this help message"
+}
+
+# ====== Command Dispatcher ======
+command_dispatcher() {
+    local COMMAND="$1"
+    shift
+
+    if [[ " ${commands[*]} " =~ " $COMMAND " ]]; then
+        "${COMMAND}_command" "$@"
+    else
+        echo "Error: Unknown command '$COMMAND'"
+        echo "Use '$BASE_COMMAND help' for a list of commands."
+        exit 1
+    fi
+}
+
+# ====== Main Function ======
+main() {
+
+    if [[ $# -lt 1 ]]; then
+        echo "Usage: $BASE_COMMAND [global-options] <command> [package]"
+        echo "Use '$BASE_COMMAND help' for more details."
+        exit 1
+    fi
+
+    parse_global_options "$@"
+
+    if [[ ${#REMAINING_ARGS[@]} -lt 1 ]]; then
+        echo "Error: No command specified." >&2
+        echo "Use '$BASE_COMMAND help' for more details."
+        exit 1
+    fi
+
+    local COMMAND="${REMAINING_ARGS[0]}"
+    shift
+    command_dispatcher "$COMMAND" "${REMAINING_ARGS[@]:1}"
+}
+
+# ====== Execute Main ======
+main "$@"

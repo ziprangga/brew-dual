@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+
+# Load 
+source "$(dirname "${BASH_SOURCE[0]}")/../libexec/tools/check-installed"
+
+# Define Homebrew paths
+brew_dual_uninstall() {
+
+    # Loop through all package arguments
+    for PACKAGE in "$@"; do
+        color_echo "INFO" "🔍 Checking if $PACKAGE is installed before uninstalling..."
+
+        # Uninstall package if present on ARM Homebrew
+        if is_installed "$ARM_BREW" "$PACKAGE" "$ARM_ARCH"; then
+            color_echo "INFO" "🗑 Removing $PACKAGE from ARM Homebrew..."
+            if [ "$VERBOSE" = true ]; then
+                $ARM_ARCH "$ARM_BREW" uninstall -v "$PACKAGE"
+            else
+                $ARM_ARCH "$ARM_BREW" uninstall "$PACKAGE"
+            fi
+            color_echo "INFO" "✅ Successfully removed $PACKAGE from ARM Homebrew."
+        else
+            color_echo "WARN" "⚠️ $PACKAGE not found on ARM Homebrew. Skipping..."
+        fi
+
+        # Uninstall package if present on X86 Homebrew
+        if is_installed "$X86_BREW" "$PACKAGE" "$X86_ARCH"; then
+            color_echo "INFO" "🗑 Removing $PACKAGE from x86 Homebrew..."
+            if [ "$VERBOSE" = true ]; then
+                $X86_ARCH "$X86_BREW" uninstall -v "$PACKAGE"
+            else
+                $X86_ARCH "$X86_BREW" uninstall "$PACKAGE"
+            fi
+            color_echo "INFO" "✅ Successfully removed $PACKAGE from x86 Homebrew."
+        else
+            color_echo "WARN" "⚠️ $PACKAGE not found on x86 Homebrew. Skipping..."
+        fi
+    done
+
+    color_echo "INFO" "🚮 Package removal complete!"
+}
+

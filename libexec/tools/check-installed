@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+
+is_installed() {
+    local brew_path="$1"
+    local package="$2"
+    local arch_cmd="$3"
+
+    # Check if the exact package name is installed
+    if $arch_cmd "$brew_path" list --formula | grep -qx "$package"; then
+        return 0
+    fi
+
+    # Check if the installed formula provides a different linked name
+    local installed_names
+    installed_names=$($arch_cmd "$brew_path" info --json=v2 "$package" 2>/dev/null | awk -F'"' '/"aliases":\[/ {gsub(/[\[\]]/, "", $4); print $4}')
+
+    if [[ "$installed_names" == *"$package"* ]]; then
+        return 0
+    fi
+
+    return 1
+}
+

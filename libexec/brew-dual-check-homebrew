@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+
+# ====== check dual homebrew ======
+brew_dual_check_homebrew() {
+    log "INFO" "Check and Install dual Homebrew"
+    local missing_x86=false
+    local missing_arm=false
+
+    # Check if x86 Homebrew exists
+    if [[ ! -x "$X86_BREW" ]]; then
+        log "WARN" "x86 Homebrew not found or not executable at $X86_BREW"
+        missing_x86=true
+    fi
+
+    # Check if ARM Homebrew exists
+    if [[ ! -x "$ARM_BREW" ]]; then
+        log "WARN" "ARM Homebrew not found or not executable at $ARM_BREW"
+        missing_arm=true
+    fi
+
+    # If both are missing, prompt for a single installation
+    if [[ "$missing_x86" == true && "$missing_arm" == true ]]; then
+        read -p "Both x86 and ARM Homebrew are missing. Install both? (y/n): " choice
+        if [[ "$choice" == "y" || "$choice" == "Y" ]]; then
+            color_echo "INFO" "Installing ARM Homebrew..."
+            $ARM_ARCH /bin/bash -c "$(curl -fsSL $HOMEBREW_INSTALL_SCRIPT)"
+
+            color_echo "INFO" "Installing x86 Homebrew under Rosetta..."
+            $X86_ARCH /bin/bash -c "$(curl -fsSL $HOMEBREW_INSTALL_SCRIPT)"
+
+            color_echo "INFO" "Dual Homebrew installation completed. Restart your terminal or source your shell configuration."
+        else
+            color_echo "ERROR" "Homebrew setup is incomplete. Exiting..."
+            exit 1
+        fi
+    else
+        # Install only missing versions separately
+        if [[ "$missing_x86" == true ]]; then
+            read -p "x86 Homebrew is missing. Install it? (y/n): " choice
+            if [[ "$choice" == "y" || "$choice" == "Y" ]]; then
+                color_echo "INFO" "Installing x86 Homebrew under Rosetta..."
+                $X86_ARCH /bin/bash -c "$(curl -fsSL $HOMEBREW_INSTALL_SCRIPT)"
+            else
+                color_echo "ERROR" "x86 Homebrew setup incomplete."
+            fi
+        fi
+
+        if [[ "$missing_arm" == true ]]; then
+            read -p "ARM Homebrew is missing. Install it? (y/n): " choice
+            if [[ "$choice" == "y" || "$choice" == "Y" ]]; then
+                color_echo "INFO" "Installing ARM Homebrew..."
+                $ARM_ARCH /bin/bash -c "$(curl -fsSL $HOMEBREW_INSTALL_SCRIPT)"
+            else
+                color_echo "ERROR" "ARM Homebrew setup incomplete."
+            fi
+        fi
+    fi
+
+    color_echo "INFO" "Dual Homebrew setup verified"
+
+    # Display instructions for configuring shell environment
+    cat <<EOF
+For safety ensure your profile file (\`~/.zprofile\`, \`~/.zshrc\`, \`~/.bash_profile\`, or \`~/.bashrc\`) includes:
+
+if [ "\$(uname -m)" = "arm64" ]; then
+    eval "\$(/opt/homebrew/bin/brew shellenv)"
+else
+    eval "\$(/usr/local/bin/brew shellenv)"
+fi
+
+EOF
+}

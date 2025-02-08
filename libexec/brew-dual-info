@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+# Define Homebrew paths
+brew_dual_info(){
+
+# Loop through all package arguments
+for PACKAGE in "$@"; do
+    color_echo "INFO" "🔍 Checking $PACKAGE..."
+
+    color_echo "WARN" "Info $PACKAGE on ARM Homebrew"
+    $ARM_ARCH "$ARM_BREW" info "$PACKAGE"
+   
+    color_echo "WARN" "Info $PACKAGE on X86 Homebrew"
+    $X86_ARCH "$X86_BREW" info "$PACKAGE"
+    
+done
+
+}

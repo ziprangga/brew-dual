@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+ARM_BREW="/opt/homebrew/bin/brew"
+readonly ARM_ARCH="arch -arm64"
+
+main(){
+    $ARM_ARCH "$ARM_BREW" "$@"
+}
+main "$@"

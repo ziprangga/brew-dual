@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+
+brew_dual_self_update() {
+    log "INFO" "Checking for updates to brew-dual..."
+
+    local SCRIPT_DIR
+    SCRIPT_DIR="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
+
+    # Ensure Git is installed
+    if ! command -v git &>/dev/null; then
+        log "ERROR" "Git is not installed. Please install Git to update brew-dual."
+        return 1
+    fi
+
+    # Ensure brew-dual is installed via Git
+    if [[ ! -d "$SCRIPT_DIR/.git" ]]; then
+        log "WARN" "brew-dual is not installed via Git. Please update manually."
+        log "INFO" "Download the latest version from: $BREW_DUAL_REPO"
+        return 1
+    fi
+
+    # Check internet connectivity before fetching updates
+    if ! curl -Is https://github.com/ | head -n 1 | grep -q "HTTP/"; then
+        log "ERROR" "Failed to reach GitHub. Please check your internet connection."
+        return 1
+    fi
+
+    # Fetch latest changes without modifying local files
+    git -C "$SCRIPT_DIR" fetch origin
+
+    # Get local and remote commit hashes
+    local LOCAL_COMMIT
+    local REMOTE_COMMIT
+    LOCAL_COMMIT=$(git -C "$SCRIPT_DIR" rev-parse HEAD)
+    REMOTE_COMMIT=$(git -C "$SCRIPT_DIR" rev-parse origin/main)
+
+    if [[ "$LOCAL_COMMIT" == "$REMOTE_COMMIT" ]]; then
+        log "INFO" "brew-dual is already up to date."
+        return 0
+    fi
+
+    log "INFO" "A new version is available! Updating brew-dual..."
+
+    # Check for local changes before updating
+    if ! git -C "$SCRIPT_DIR" diff --quiet; then
+        log "WARN" "You have local changes. Stashing them before updating..."
+        git -C "$SCRIPT_DIR" stash push -m "Auto-stash before update"
+    fi
+
+    # Pull latest changes
+    if git -C "$SCRIPT_DIR" pull --rebase origin main; then
+        log "INFO" "✅ Updated brew-dual successfully!"
+    else
+        log "ERROR" "Failed to update brew-dual. Please check for local conflicts."
+        return 1
+    fi
+}

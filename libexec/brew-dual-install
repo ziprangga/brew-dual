@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+
+# Load 
+source "$(dirname "${BASH_SOURCE[0]}")/../libexec/tools/check-installed"
+
+# Define Homebrew paths
+brew_dual_install() {
+
+    # Loop through all package arguments
+    for PACKAGE in "$@"; do
+        color_echo "INFO" "🔍 Checking $PACKAGE..."
+
+        # Install package if missing on ARM Homebrew
+        if ! is_installed "$ARM_BREW" "$PACKAGE" "$ARM_ARCH"; then
+            color_echo "INFO" "📦 Installing $PACKAGE on ARM Homebrew..."
+            if [ "$VERBOSE" = true ]; then
+                $ARM_ARCH "$ARM_BREW" install -v "$PACKAGE"
+            else
+                $ARM_ARCH "$ARM_BREW" install "$PACKAGE"
+            fi
+        else
+            color_echo "INFO" "✅ $PACKAGE is already installed on ARM Homebrew."
+        fi
+
+        # Install package if missing on X86 Homebrew
+        if ! is_installed "$X86_BREW" "$PACKAGE" "$X86_ARCH"; then
+            color_echo "INFO" "📦 Installing $PACKAGE on x86 Homebrew..."
+            if [ "$VERBOSE" = true ]; then
+                $X86_ARCH "$X86_BREW" install -v "$PACKAGE"
+            else
+                $X86_ARCH "$X86_BREW" install "$PACKAGE"
+            fi
+        else
+            color_echo "INFO" "✅ $PACKAGE is already installed on x86 Homebrew."
+        fi
+    done
+
+    color_echo "INFO" "🎉 Package sync complete!"
+}
