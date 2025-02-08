@@ -51,13 +51,13 @@ brew x86 list
 Run the following command to install `brew-dual` automatically:
 
 ```sh
-bash <(curl -fsSL https://raw.githubusercontent.com/yourusername/brew-dual/main/install.sh)
+bash <(curl -fsSL https://raw.githubusercontent.com/ziprangga/brew-dual/main/install.sh)
 ```
 
 Or using `wget`:
 
 ```sh
-bash <(wget -qO- https://raw.githubusercontent.com/yourusername/brew-dual/main/install.sh)
+bash <(wget -qO- https://raw.githubusercontent.com/ziprangga/brew-dual/main/install.sh)
 ```
 
 ## If you need to know or install dual homebrew setup just run:
@@ -71,7 +71,7 @@ brew-dual check-homebrew
 #### **Clone the Repository**
 
 ```sh
-git clone https://github.com/yourusername/brew-dual.git ~/.config/brew-dual
+git clone https://github.com/ziprangga/brew-dual.git ~/.config/brew-dual
 ```
 
 #### **Run the Installer**
