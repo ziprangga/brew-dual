@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # ====== Global Variables ======
-GITHUB_REPO="https://github.com/yourusername/brew-dual.git"
+GITHUB_REPO="https://github.com/ziprangga/brew-dual.git"
 INSTALL_DIR="$HOME/.config/brew-dual"
 BIN_DIR="$INSTALL_DIR/bin"
 LIBEXEC_DIR="$INSTALL_DIR/libexec"
