@@ -1,0 +1,83 @@
+#!/usr/bin/env bash
+
+source "$(dirname "${BASH_SOURCE[0]}")/../libexec/tools/brew-dual-utility"
+
+merge_binary() {
+    local arm_brew="$1"
+    local x86_brew="$2"
+    local package="$3"
+    local arch_cmd="$4"
+    local dest_dir="$5"
+
+    # Ensure package is installed in both architectures
+    if ! is_installed "$arm_brew" "$package" "$arch_cmd" || ! is_installed "$x86_brew" "$package" "$arch_cmd"; then
+        color_echo "WARN" "⚠️ Package '$package' is not installed on both ARM and x86."
+        return
+    fi
+
+    # Get real paths for the package
+    local arm_package_path x86_package_path
+    arm_package_path=$(get_package_path "$arm_brew" "$package" "$arch_cmd")
+    x86_package_path=$(get_package_path "$x86_brew" "$package" "$arch_cmd")
+
+    if [[ -z "$arm_package_path" || -z "$x86_package_path" ]]; then
+        color_echo "WARN" "⚠️ Could not determine package paths for '$package'."
+        return
+    fi
+
+    color_echo "INFO" "🔄 Merging binaries for '$package'"
+
+    # Find all Mach-O binaries in ARM package
+    find -L "$arm_package_path" -type f -exec lipo -info {} + 2>/dev/null | grep -E "arm64|x86_64" | while IFS= read -r line; do
+        local arm_file
+        arm_file=$(echo "$line" | awk -F: '{print $1}')
+
+        # Get relative path using a safe fallback
+        local relative_path
+        relative_path=$(realpath --relative-to="$arm_package_path" "$arm_file" 2>/dev/null || python3 -c 'import os,sys; print(os.path.relpath(sys.argv[1], sys.argv[2]))' "$arm_file" "$arm_package_path" 2>/dev/null)
+
+        # Skip if we couldn't determine relative path
+        [[ -z "$relative_path" ]] && continue
+
+        local x86_file="$x86_package_path/$relative_path"
+        local output_file
+
+        if [[ -n $dest_dir ]]; then
+            output_file="$dest_dir/$relative_path"
+            mkdir -p "$(dirname "$output_file")"
+        else
+            output_file="$arm_file"
+            cp "$arm_file" "${arm_file}.bak"
+        fi
+
+        # Skip if already universal
+        if lipo -info "$arm_file" 2>/dev/null | grep -qE "arm64.*x86_64|x86_64.*arm64"; then
+            color_echo "INFO" "✅ Skipping already universal binary: $relative_path"
+            continue
+        fi
+
+        # Ensure both files exist and are valid Mach-O binaries
+        if [[ -f "$x86_file" ]] && lipo -info "$arm_file" 2>/dev/null | grep -q "arm64" && lipo -info "$x86_file" 2>/dev/null | grep -q "x86_64"; then
+            # Merge using lipo
+            if lipo -create "$arm_file" "$x86_file" -output "$output_file"; then
+                color_echo "INFO" "✅ Merged: $output_file"
+                [[ -z $dest_dir ]] && rm -f "${arm_file}.bak"
+            else
+                color_echo "ERROR" "❌ Failed to merge '$relative_path'."
+                [[ -z $dest_dir ]] && mv "${arm_file}.bak" "$arm_file"
+            fi
+        else
+            color_echo "WARN" "⚠️ Skipping non-Mach-O file: $relative_path"
+        fi
+    done
+}
+
+brew_dual_merge() {
+    local dest_dir="$1"
+    shift
+    local packages=("$@")
+
+    for package in "${packages[@]}"; do
+        merge_binary "$ARM_BREW" "$X86_BREW" "$package" "$ARM_ARCH" "$dest_dir"
+    done
+}
