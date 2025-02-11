@@ -33,8 +33,6 @@ is_installed() {
     return 1
 }
 
-
-
 get_package_name() {
     local brew_path="$1"
     local package="$2"
@@ -49,14 +47,13 @@ get_package_name() {
 
     if [[ -n "$real_name" ]]; then
         log "INFO" "Extracted package name for '$package': $real_name"
-        color_echo "INFO" "$real_name"
+        echo "$real_name"
         return 0
     fi
 
     log "WARN" "❌ Failed to extract package name for '$package' in '$brew_path'."
     return 1
 }
-
 
 get_package_path() {
     local brew_path="$1"
@@ -69,6 +66,7 @@ get_package_path() {
     real_path=$($arch_cmd "$brew_path" --prefix "$package" 2>/dev/null)
     if [[ -n "$real_path" && -d "$real_path" ]]; then
         log "INFO" "Resolved package prefix path: $real_path"
+        echo "$real_path"
         return 0
     fi
 
@@ -100,7 +98,7 @@ get_package_full_path() {
 
     local full_path="$real_path/$latest_version"
     log "INFO" "Resolved latest installed version path for '$package': $full_path"
-    color_echo "INFO" "$full_path"
+    echo "$full_path"
     
     return 0
 }

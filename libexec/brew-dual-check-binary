@@ -22,6 +22,7 @@ check_binary_arch() {
         binary_paths=$(find -L "$real_path" -type f \( \
                     \( -perm -111 -a \( \
                         -path "*/bin/*" -o \
+                        -path "*/lib/*" -o \
                         -path "*/sbin/*" -o \
                         -path "*/libexec/bin/*" -o \
                         -path "*/Frameworks/*/bin/*" -o \
