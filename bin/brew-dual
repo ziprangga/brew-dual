@@ -254,7 +254,7 @@ merge-package_command(){
             load_core_script "brew-dual-merge"
     fi
 
-    brew_dual_merge "$output_path" "${packages[@]}"
+    brew_dual_merge "$output_path" "$@"
 
 }
 
