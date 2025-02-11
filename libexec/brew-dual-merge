@@ -6,6 +6,11 @@ merge_to_fat_binary() {
     local x86_binary="$2"
     local output_binary="$3"
 
+    if ! lipo -info "$arm_binary" &>/dev/null || ! lipo -info "$x86_binary" &>/dev/null; then
+        color_echo "WARN" "⚠️ Skipping non-Mach-O file: $(basename "$output_binary")"
+        return 1
+    fi
+
     color_echo "INFO" "Merging $arm_binary and $x86_binary into $output_binary"
     if [[ "$DRY_RUN" == "true" ]]; then
         color_echo "INFO" "(Dry-run) Would merge $arm_binary and $x86_binary into $output_binary"
@@ -35,29 +40,49 @@ brew_dual_merge() {
 
         arm_binaries=()
         x86_binaries=()
-        while IFS= read -r file; do arm_binaries+=("$file"); done < <(find "$arm_real_path" -type f -perm -111 2>/dev/null)
-        while IFS= read -r file; do x86_binaries+=("$file"); done < <(find "$x86_real_path" -type f -perm -111 2>/dev/null)
+        while IFS= read -r file; do
+            if lipo -info "$file" &>/dev/null; then
+                arm_binaries+=("$file")
+            fi
+        done < <(find "$arm_real_path" -type f -perm -111 2>/dev/null)
+
+        while IFS= read -r file; do
+            if lipo -info "$file" &>/dev/null; then
+                x86_binaries+=("$file")
+            fi
+        done < <(find "$x86_real_path" -type f -perm -111 2>/dev/null)
         
+        # Copy non-binary files to preserve package structure
+        if [[ -n "$output_dir" ]]; then
+            local dest_dir="$output_dir/$package"
+            $DRY_RUN || rsync -a --exclude "*.dylib" --exclude "*.so" --exclude "*.o" "$arm_real_path/" "$dest_dir/"
+            color_echo "INFO" "sync $arm_real_path -> $output_dir/$package"
+        fi
+
         for arm_binary in "${arm_binaries[@]}"; do
-            local binary_name=$(basename "$arm_binary")
-            local x86_binary=""
-            for file in "${x86_binaries[@]}"; do
-                if [[ "$(basename "$file")" == "$binary_name" ]]; then
-                    x86_binary="$file"
-                    break
-                fi
-            done
-            
-            local fat_binary="${output_dir:-$arm_real_path}/$binary_name"
-            local backup_binary="$arm_binary.bak"
-            
+            local rel_path="${arm_binary#$arm_real_path/}"
+            local x86_binary="$x86_real_path/$rel_path"
+
+            if [[ -z "$x86_binary" || ! -f "$x86_binary" ]]; then
+                for file in "${x86_binaries[@]}"; do
+                    if [[ "$(basename "$file")" == "$(basename "$arm_binary")" ]]; then
+                        x86_binary="$file"
+                        break
+                    fi
+                done
+            fi
+
             if [[ -n "$x86_binary" && -f "$x86_binary" ]]; then
+                local fat_binary="${dest_dir:-$arm_real_path}/$rel_path"
+                local backup_binary="$arm_binary.bak"
+
+                $DRY_RUN || mkdir -p "$(dirname "$fat_binary")"
                 if [[ -z "$output_dir" ]]; then
                     $DRY_RUN || cp "$arm_binary" "$backup_binary"
                 fi
-                
+
                 merge_to_fat_binary "$arm_binary" "$x86_binary" "$fat_binary"
-                
+
                 if [[ -z "$output_dir" && $? -ne 0 ]]; then
                     color_echo "ERROR" "❌ Merge failed, restoring original ARM binary."
                     $DRY_RUN || mv "$backup_binary" "$arm_binary"
@@ -68,3 +93,5 @@ brew_dual_merge() {
         done
     done
 }
+
+        
