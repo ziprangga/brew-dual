@@ -100,6 +100,7 @@ get_package_full_path() {
 
     local full_path="$real_path/$latest_version"
     log "INFO" "Resolved latest installed version path for '$package': $full_path"
-
+    color_echo "INFO" "$full_path"
+    
     return 0
 }
