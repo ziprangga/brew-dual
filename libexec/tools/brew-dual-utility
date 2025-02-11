@@ -13,19 +13,21 @@ is_installed() {
         return 0
     fi
 
+    log "INFO" "⚠️ Package '$package' not found directly. Checking aliases..."
+
     # Extract aliases using awk
     local installed_names
-    installed_names=$($arch_cmd "$brew_path" info --json=v2 "$package" 2>/dev/null | awk -F'"' '
+    installed_names=$($arch_cmd "$brew_path" info --json=v2 --installed 2>/dev/null | awk -F'"' '
+        /"name": *"/ { pkg_name=$4 }
         /"aliases": *\[/ { in_aliases=1; next }
         in_aliases && /\]/ { in_aliases=0; next }
-        in_aliases { print $2 }
-    ')
+        in_aliases { print $2, pkg_name }
+    ' | grep -w "$package" | awk '{print $2}')
 
     log "INFO" "Extracted aliases for '$package': $installed_names"
 
-    # Check if the package name matches any alias
-    if [[ " $installed_names " == *" $package "* ]]; then
-        log "INFO" "✅ Package '$package' is installed as an alias: $installed_names"
+    if [[ -n "$installed_names" ]]; then
+        log "INFO" "✅ Package '$package' is installed as an alias for: $installed_names"
         return 0
     fi
 
@@ -45,14 +47,16 @@ get_package_name() {
         /"name":/ { print $4; exit }
     ')
 
-    if [[ -n "$real_name" ]]; then
-        log "INFO" "Extracted package name for '$package': $real_name"
-        echo "$real_name"
-        return 0
+    if [[ -z "$real_name" ]]; then
+        log "WARN" "❌ Failed to extract package name for '$package' in '$brew_path'."
+        return 1
     fi
 
-    log "WARN" "❌ Failed to extract package name for '$package' in '$brew_path'."
-    return 1
+    local package_real_name="$real_name"
+    log "INFO" "Extracted package name for '$package': $package_real_name"
+    echo "$package_real_name"
+
+    return 0
 }
 
 get_package_path() {
@@ -64,14 +68,37 @@ get_package_path() {
 
     local real_path
     real_path=$($arch_cmd "$brew_path" --prefix "$package" 2>/dev/null)
-    if [[ -n "$real_path" && -d "$real_path" ]]; then
-        log "INFO" "Resolved package prefix path: $real_path"
-        echo "$real_path"
-        return 0
+    if [[ -z "$real_path" || ! -d "$real_path" ]]; then
+        log "WARN" "❌ Package '$package' not found in Homebrew prefix at '$brew_path'."
+        return 1
     fi
 
-    log "WARN" "❌ Package '$package' not found in Homebrew prefix at '$brew_path'."
-    return 1
+    local package_path="$real_path"
+    log "INFO" "Resolved package prefix path for '$package': $package_path"
+    echo "$package_path"
+
+    return 0
+}
+
+get_package_cellar_path() {
+    local brew_path="$1"
+    local package="$2"
+    local arch_cmd="$3"
+
+    log "INFO" "Running get_package_cellar_path with: brew_path=$brew_path, package=$package, arch_cmd=$arch_cmd"
+
+    local real_path
+    real_path=$($arch_cmd "$brew_path" --cellar "$package" 2>/dev/null)
+    if [[ -z "$real_path" || ! -d "$real_path" ]]; then
+        log "WARN" "❌ Package '$package' not found in Homebrew cellar at '$brew_path'."
+        return 1
+    fi
+
+    local cellar_path="$real_path"
+    log "INFO" "Resolved latest installed version path for '$package': $cellar_path"
+    echo "$cellar_path"
+    
+    return 0
 }
 
 get_package_full_path() {
