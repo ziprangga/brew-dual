@@ -7,6 +7,7 @@ BREW_DUAL_REPO="https://github.com/ziprangga/brew-dual"
 HOMEBREW_INSTALL_SCRIPT="https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh"
 VERBOSE=false
 DEBUG=false
+DRY_RUN=false
 MERGE_PATH=""
 X86_BREW="/usr/local/bin/brew"
 ARM_BREW="/opt/homebrew/bin/brew"
@@ -82,6 +83,7 @@ parse_global_options() {
         case $1 in
             --verbose) VERBOSE=true ;;
             --debug) DEBUG=true ;;
+            --dry-run) DRY_RUN=true ;;
             --merge-path=*) MERGE_PATH="${1#*=}" ;;
             --update)
                 self-update_command
