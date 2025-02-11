@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Load 
-source "$(dirname "${BASH_SOURCE[0]}")/../libexec/tools/check-installed"
+source "$(dirname "${BASH_SOURCE[0]}")/../libexec/tools/brew-dual-utility"
 
 # Define Homebrew paths
 brew_dual_upgrade() {

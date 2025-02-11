@@ -21,3 +21,54 @@ is_installed() {
     return 1
 }
 
+get_package_name() {
+    local brew_path="$1"
+    local package="$2"
+    local arch_cmd="$3"
+
+    local real_name
+    real_name=$($arch_cmd "$brew_path" info --json=v2 "$package" 2>/dev/null | jq -r '.formulae[0].name // empty')
+
+    if [[ -n "$real_name" ]]; then
+        echo "$real_name"
+        return 0
+    fi
+
+    return 1
+}
+
+get_package_path() {
+    local brew_path="$1"
+    local package="$2"
+    local arch_cmd="$3"
+
+    local real_path
+    real_path=$($arch_cmd "$brew_path" --prefix "$package" 2>/dev/null)
+    if [[ -n "$real_path" && -d "$real_path" ]]; then
+        echo "$real_path"
+        return 0
+    fi
+
+    return 1
+}
+
+get_package_full_path() {
+    local brew_path="$1"
+    local package="$2"
+    local arch_cmd="$3"
+
+    local real_path
+    real_path=$($arch_cmd "$brew_path" --cellar "$package" 2>/dev/null)
+    if [[ -n "$real_path" && -d "$real_path" ]]; then
+        local latest_version
+        latest_version=$(find "$real_path" -mindepth 1 -maxdepth 1 -type d -printf "%f\n" | sort -V | tail -n 1)
+
+        local full_path="$real_path/$latest_version"
+        if [[ -n "$latest_version" && -d "$full_path" ]]; then
+            echo "$full_path"
+            return 0
+        fi
+    fi
+
+    return 1
+}
