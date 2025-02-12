@@ -57,9 +57,12 @@ brew_dual_merge() {
             local dest_dir="$output_dir/$package"
             $DRY_RUN || rsync -a --exclude "*.dylib" --exclude "*.so" --exclude "*.o" "$arm_real_path/" "$dest_dir/"
             color_echo "INFO" "sync $arm_real_path -> $dest_dir"
+            color_echo "INFO" "This process will install $package universal2 version in $dest_dir"
+            coolor_echo "WARN" "$package universal2 version not associated with homebrew"
         else
             local dest_dir="$arm_real_path"
-            color_echo "INFO" "you will replace $arm_real_path with merged version of $dest_dir"
+            color_echo "INFO" "this process replace $arm_real_path with merged version of $dest_dir"
+            color_echo "WARN" "If $package update or upgrade than this process need to run again to make $package universal2 version"
         fi
 
         for arm_binary in "${arm_binaries[@]}"; do
