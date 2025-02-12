@@ -1,74 +1,34 @@
-#!/usr/bin/env bash
-
 is_installed() {
     local brew_path="$1"
     local package="$2"
     local arch_cmd="$3"
 
+    log "INFO" "Running is_installed with: brew_path=$brew_path, package=$package, arch_cmd=$arch_cmd"
+
     # Check if the exact package name is installed
     if $arch_cmd "$brew_path" list --formula | grep -qx "$package"; then
+        log "INFO" "✅ Package '$package' found in '$brew_path'."
         return 0
     fi
 
-    # Check if the installed formula provides a different linked name
+    log "INFO" "⚠️ Package '$package' not found directly. Checking aliases..."
+
+    # Extract aliases using awk
     local installed_names
-    installed_names=$($arch_cmd "$brew_path" info --json=v2 "$package" 2>/dev/null | awk -F'"' '/"aliases":\[/ {gsub(/[\[\]]/, "", $4); print $4}')
+    installed_names=$($arch_cmd "$brew_path" info --json=v2 --installed 2>/dev/null | awk -F'"' '
+        /"name": *"/ { pkg_name=$4 }
+        /"aliases": *\[/ { in_aliases=1; next }
+        in_aliases && /\]/ { in_aliases=0; next }
+        in_aliases { print $2, pkg_name }
+    ' | grep -w "$package" | awk '{print $2}')
 
-    if [[ "$installed_names" == *"$package"* ]]; then
+    log "INFO" "Extracted aliases for '$package': $installed_names"
+
+    if [[ -n "$installed_names" ]]; then
+        log "INFO" "✅ Package '$package' is installed as an alias for: $installed_names"
         return 0
     fi
 
-    return 1
-}
-
-get_package_name() {
-    local brew_path="$1"
-    local package="$2"
-    local arch_cmd="$3"
-
-    local real_name
-    real_name=$($arch_cmd "$brew_path" info --json=v2 "$package" 2>/dev/null | jq -r '.formulae[0].name // empty')
-
-    if [[ -n "$real_name" ]]; then
-        echo "$real_name"
-        return 0
-    fi
-
-    return 1
-}
-
-get_package_path() {
-    local brew_path="$1"
-    local package="$2"
-    local arch_cmd="$3"
-
-    local real_path
-    real_path=$($arch_cmd "$brew_path" --prefix "$package" 2>/dev/null)
-    if [[ -n "$real_path" && -d "$real_path" ]]; then
-        echo "$real_path"
-        return 0
-    fi
-
-    return 1
-}
-
-get_package_full_path() {
-    local brew_path="$1"
-    local package="$2"
-    local arch_cmd="$3"
-
-    local real_path
-    real_path=$($arch_cmd "$brew_path" --cellar "$package" 2>/dev/null)
-    if [[ -n "$real_path" && -d "$real_path" ]]; then
-        local latest_version
-        latest_version=$(find "$real_path" -mindepth 1 -maxdepth 1 -type d -printf "%f\n" | sort -V | tail -n 1)
-
-        local full_path="$real_path/$latest_version"
-        if [[ -n "$latest_version" && -d "$full_path" ]]; then
-            echo "$full_path"
-            return 0
-        fi
-    fi
-
+    log "WARN" "❌ Package '$package' is NOT installed in '$brew_path'."
     return 1
 }
