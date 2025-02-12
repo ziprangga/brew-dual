@@ -105,7 +105,10 @@ brew_dual_merge() {
                 fi
             fi
         done
+
+        color_echo "INFO" "✅ All binaries for $package were merged successfully"
     done
 }
+
 
         
