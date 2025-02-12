@@ -90,6 +90,7 @@ brew_dual_merge() {
 
                 $DRY_RUN || mkdir -p "$(dirname "$fat_binary")"
                 if [[ -z "$output_dir" ]]; then
+                    color_echo "INFO" "Backup binary before merging to $backup_binary"
                     $DRY_RUN || cp "$arm_binary" "$backup_binary"
                 fi
 
@@ -99,6 +100,7 @@ brew_dual_merge() {
                     color_echo "ERROR" "❌ Merge failed, restoring original ARM binary."
                     $DRY_RUN || mv "$backup_binary" "$arm_binary"
                 elif [[ -f "$backup_binary" ]]; then
+                    color_echo "INFO" "Remove backup binary: $backup_binary"
                     $DRY_RUN || rm -f "$backup_binary"
                 fi
             fi
