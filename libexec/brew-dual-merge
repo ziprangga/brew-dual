@@ -11,6 +11,12 @@ merge_to_fat_binary() {
         return 1
     fi
 
+    if lipo -archs "$arm_binary" | grep -q "x86_64" && lipo -archs "$arm_binary" | grep -q "arm64"; then
+        color_echo "INFO" "$arm_binary is already a fat binary. Skipping the merging process..."
+        return 0
+    fi
+
+
     if [[ "$DRY_RUN" == "true" ]]; then
         color_echo "INFO" "(Dry-run) Would merge $arm_binary and $x86_binary into $output_binary"
     else
@@ -51,18 +57,16 @@ brew_dual_merge() {
                 x86_binaries+=("$file")
             fi
         done < <(find "$x86_real_path" -type f \( -perm -111 -o -name "*.dylib" -o -name "*.so" -o -name "*.a" \) 2>/dev/null)
-
-        color_echo "WARN" "${arm_binaries[@]}"
         
-        # Copy non-binary files to preserve package structure
+        local dest_dir
         if [[ -n "$output_dir" ]]; then
-            local dest_dir="$output_dir/$package"
+            dest_dir="$output_dir/$package"
             $DRY_RUN || rsync -a --exclude "*.dylib" --exclude "*.so" --exclude "*.o" "$arm_real_path/" "$dest_dir/"
             color_echo "INFO" "sync $arm_real_path -> $dest_dir"
             color_echo "INFO" "This process will install $package universal2 version in $dest_dir"
-            coolor_echo "WARN" "$package universal2 version not associated with homebrew"
+            color_echo "WARN" "$package universal2 version not associated with homebrew"
         else
-            local dest_dir="$arm_real_path"
+            dest_dir="$arm_real_path"
             color_echo "INFO" "this process replace $arm_real_path with merged version of $dest_dir"
             color_echo "WARN" "If $package update or upgrade than this process need to run again to make $package universal2 version"
         fi
