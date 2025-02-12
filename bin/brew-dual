@@ -291,6 +291,7 @@ help_command() {
         color_echo "INFO" "  $cmd"
     done
     echo ""
+    echo "Please ensure that Homebrew is installed for both ARM and x86 architectures"
     echo "$BASE_COMMAND: A tool for managing packages on dual Homebrew installations."
     echo "Usage: $BASE_COMMAND [global-options] <command> [package]"
     echo ""

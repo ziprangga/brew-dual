@@ -87,6 +87,7 @@ ensure_path() {
             log "INFO" "Run 'source $shell_profile' to apply changes."
         else
             log "INFO" "PATH already configured in $shell_profile"
+            log "WARN" "Please ensure that '$BIN_DIR' is already in your PATH. If not, add it manually."
         fi
 
         export PATH="$BIN_DIR:$PATH"
@@ -98,7 +99,7 @@ main() {
     check_dependencies
     install_plugin
     ensure_path
-    log "INFO" "✅ Installation complete! Run 'brew-dual help' to get started."
+    log "INFO" "✅ Installation complete! Run 'brew-dual help' to get started or run 'brew dual check-homebrew' to ensure that Homebrew is installed for both ARM and x86 architectures"
 }
 
 # ====== Execute Install ======
