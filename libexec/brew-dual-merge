@@ -44,13 +44,15 @@ brew_dual_merge() {
             if lipo -info "$file" &>/dev/null; then
                 arm_binaries+=("$file")
             fi
-        done < <(find "$arm_real_path" -type f -perm -111 2>/dev/null)
+        done < <(find "$arm_real_path" -type f \( -perm -111 -o -name "*.dylib" -o -name "*.so" -o -name "*.a" \) 2>/dev/null)
 
         while IFS= read -r file; do
             if lipo -info "$file" &>/dev/null; then
                 x86_binaries+=("$file")
             fi
-        done < <(find "$x86_real_path" -type f -perm -111 2>/dev/null)
+        done < <(find "$x86_real_path" -type f \( -perm -111 -o -name "*.dylib" -o -name "*.so" -o -name "*.a" \) 2>/dev/null)
+
+        color_echo "WARN" "${arm_binaries[@]}"
         
         # Copy non-binary files to preserve package structure
         if [[ -n "$output_dir" ]]; then
