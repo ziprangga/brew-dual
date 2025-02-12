@@ -1,16 +1,18 @@
 #!/usr/bin/env bash
 
 # ====== Global Variables ======
-VERSION="1.0.0"
-RELEASE_DATE="2025-02-08"
+VERSION="1.0.1"
+RELEASE_DATE="2025-02-12"
 BREW_DUAL_REPO="https://github.com/ziprangga/brew-dual"
 HOMEBREW_INSTALL_SCRIPT="https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh"
 VERBOSE=false
 DEBUG=false
+DRY_RUN=false
+MERGE_PATH=""
 X86_BREW="/usr/local/bin/brew"
 ARM_BREW="/opt/homebrew/bin/brew"
 readonly BASE_COMMAND="brew-dual"
-readonly commands=("install" "uninstall" "update" "upgrade" "list" "pin" "unpin" "outdated" "info" "version" "check-homebrew" "help")
+readonly commands=("install" "uninstall" "update" "upgrade" "list" "pin" "unpin" "outdated" "info" "check-binary" "merge-package" "version" "check-homebrew" "help")
 readonly X86_ARCH="arch -x86_64"
 readonly ARM_ARCH="arch -arm64"
 
@@ -81,6 +83,8 @@ parse_global_options() {
         case $1 in
             --verbose) VERBOSE=true ;;
             --debug) DEBUG=true ;;
+            --dry-run) DRY_RUN=true ;;
+            --merge-path=*) MERGE_PATH="${1#*=}" ;;
             --update)
                 self-update_command
                 exit 0
@@ -234,6 +238,28 @@ list_command() {
     $X86_ARCH "$X86_BREW" list
 }
 
+check-binary_command(){
+    if ! declare -F brew-dual-check-binary >/dev/null; then
+            log "Loading core script for check-binary package"
+            load_core_script "brew-dual-check-binary"
+    fi
+
+    brew_dual_check_binary "$@"
+
+}
+
+merge-package_command(){
+    local output_path="$MERGE_PATH"
+
+    if ! declare -F brew-dual-merge >/dev/null; then
+            log "Loading core script for merge package"
+            load_core_script "brew-dual-merge"
+    fi
+
+    brew_dual_merge "$output_path" "$@"
+
+}
+
 version_command() {
     color_echo "INFO" "brew-dual version $VERSION"
     color_echo "INFO" "Released: $RELEASE_DATE"
@@ -265,24 +291,26 @@ help_command() {
         color_echo "INFO" "  $cmd"
     done
     echo ""
+    echo "Please ensure that Homebrew is installed for both ARM and x86 architectures"
     echo "$BASE_COMMAND: A tool for managing packages on dual Homebrew installations."
     echo "Usage: $BASE_COMMAND [global-options] <command> [package]"
     echo ""
     echo "Global Options:"
-    echo "  --verbose         Enable verbose output"
-    echo "  --update          Update brew-dual plugin"
-    echo "  --help            Show this help message"
+    echo "  --verbose                   Enable verbose output"
+    echo "  --update                    Update brew-dual plugin"
+    echo "  --merge-path=<path>         Used to specify a custom path for the merge-package command"
+    echo "  --help                      Show this help message"
     echo ""
     echo "Commands:"
-    echo "  install <package>  Install a package on both Homebrew installations"
-    echo "  uninstall <package> Remove a package from both Homebrew installations"
-    echo "  update             Update Homebrew on both architectures"
-    echo "  outdated           List outdated package installed on both architectures of Homebrew"
-    echo "  upgrade            Upgrade all packages on both architectures"
-    echo "  upgrade <package>  Upgrade packages on both architectures"
-    echo "  list               List installed packages on both architectures"
-    echo "  check-homebrew     Check Homebrew and install Homebrew on both architectures"
-    echo "  help               Show this help message"
+    echo "  install <package>           Install a package on both Homebrew installations"
+    echo "  uninstall <package>         Remove a package from both Homebrew installations"
+    echo "  update                      Update Homebrew on both architectures"
+    echo "  outdated                    List outdated package installed on both architectures of Homebrew"
+    echo "  upgrade                     Upgrade all packages on both architectures"
+    echo "  upgrade <package>           Upgrade packages on both architectures"
+    echo "  list                        List installed packages on both architectures"
+    echo "  check-homebrew              Check Homebrew and install Homebrew on both architectures"
+    echo "  help                        Show this help message"
 }
 
 # ====== Command Dispatcher ======

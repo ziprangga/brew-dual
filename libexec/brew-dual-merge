@@ -1,0 +1,109 @@
+#!/usr/bin/env bash
+source "$(dirname "${BASH_SOURCE[0]}")/../libexec/tools/brew-dual-utility"
+
+merge_to_fat_binary() {
+    local arm_binary="$1"
+    local x86_binary="$2"
+    local output_binary="$3"
+
+    if ! lipo -info "$arm_binary" &>/dev/null || ! lipo -info "$x86_binary" &>/dev/null; then
+        color_echo "WARN" "⚠️ Skipping non-Mach-O file: $(basename "$output_binary")"
+        return 1
+    fi
+
+    if lipo -archs "$arm_binary" | grep -q "x86_64" && lipo -archs "$arm_binary" | grep -q "arm64"; then
+        color_echo "INFO" "$arm_binary is already a fat binary. Skipping the merging process..."
+        return 0
+    fi
+
+
+    if [[ "$DRY_RUN" == "true" ]]; then
+        color_echo "INFO" "(Dry-run) Would merge $arm_binary and $x86_binary into $output_binary"
+    else
+        color_echo "INFO" "Merging $arm_binary and $x86_binary into $output_binary"
+        lipo -create -output "$output_binary" "$arm_binary" "$x86_binary"
+        if [[ $? -eq 0 ]]; then
+            color_echo "INFO" "✅ Successfully created Fat binary: $output_binary"
+        else
+            color_echo "ERROR" "❌ Failed to merge binaries for $output_binary"
+        fi
+    fi
+}
+
+brew_dual_merge() {
+    local output_dir="$1"
+    shift
+    local packages=("$@")
+
+    for package in "${packages[@]}"; do
+        local arm_real_path=$(get_package_cellar_path "$ARM_BREW" "$package" "$ARM_ARCH")
+        local x86_real_path=$(get_package_cellar_path "$X86_BREW" "$package" "$X86_ARCH")
+
+        if [[ -z "$arm_real_path" || -z "$x86_real_path" ]]; then
+            color_echo "WARN" "⚠️ Package $package does not have both ARM and x86 versions installed. Skipping merge."
+            continue
+        fi
+
+        arm_binaries=()
+        x86_binaries=()
+        while IFS= read -r file; do
+            if lipo -info "$file" &>/dev/null; then
+                arm_binaries+=("$file")
+            fi
+        done < <(find "$arm_real_path" -type f \( -perm -111 -o -name "*.dylib" -o -name "*.so" -o -name "*.a" \) 2>/dev/null)
+
+        while IFS= read -r file; do
+            if lipo -info "$file" &>/dev/null; then
+                x86_binaries+=("$file")
+            fi
+        done < <(find "$x86_real_path" -type f \( -perm -111 -o -name "*.dylib" -o -name "*.so" -o -name "*.a" \) 2>/dev/null)
+        
+        local dest_dir
+        if [[ -n "$output_dir" ]]; then
+            dest_dir="$output_dir/$package"
+            $DRY_RUN || rsync -a --exclude "*.dylib" --exclude "*.so" --exclude "*.o" "$arm_real_path/" "$dest_dir/"
+            color_echo "INFO" "sync $arm_real_path -> $dest_dir"
+            color_echo "INFO" "This process will install $package universal2 version in $dest_dir"
+            color_echo "WARN" "$package universal2 version not associated with homebrew"
+        else
+            dest_dir="$arm_real_path"
+            color_echo "INFO" "this process replace $arm_real_path with merged version of $dest_dir"
+            color_echo "WARN" "If $package update or upgrade than this process need to run again to make $package universal2 version"
+        fi
+
+        for arm_binary in "${arm_binaries[@]}"; do
+            local rel_path="${arm_binary#$arm_real_path/}"
+            local x86_binary="$x86_real_path/$rel_path"
+
+            if [[ -z "$x86_binary" || ! -f "$x86_binary" ]]; then
+                for file in "${x86_binaries[@]}"; do
+                    if [[ "$(basename "$file")" == "$(basename "$arm_binary")" ]]; then
+                        x86_binary="$file"
+                        break
+                    fi
+                done
+            fi
+
+            if [[ -n "$x86_binary" && -f "$x86_binary" ]]; then
+                local fat_binary="$dest_dir/$rel_path"
+                local backup_binary="$arm_binary.bak"
+
+                $DRY_RUN || mkdir -p "$(dirname "$fat_binary")"
+                if [[ -z "$output_dir" ]]; then
+                    $DRY_RUN || cp "$arm_binary" "$backup_binary"
+                fi
+
+                merge_to_fat_binary "$arm_binary" "$x86_binary" "$fat_binary"
+
+                if [[ -z "$output_dir" && $? -ne 0 ]]; then
+                    color_echo "ERROR" "❌ Merge failed, restoring original ARM binary."
+                    $DRY_RUN || mv "$backup_binary" "$arm_binary"
+                elif [[ -f "$backup_binary" ]]; then
+                    $DRY_RUN || rm -f "$backup_binary"
+                fi
+            fi
+        done
+    done
+}
+
+        

@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+source "$(dirname "${BASH_SOURCE[0]}")/../libexec/tools/brew-dual-utility"
+
+check_binary_arch() {
+    local brew_path="$1"
+    local package="$2"
+    local arch_cmd="$3"
+
+    if is_installed "$brew_path" "$package" "$arch_cmd"; then
+        local real_path
+        real_path=$(get_package_path "$brew_path" "$package" "$arch_cmd")
+
+        color_echo "INFO" "path: $real_path"
+
+        if [[ -z "$real_path" ]]; then
+            color_echo "WARN" "⚠️ No executables found for $package"
+            return
+        fi
+
+        # Find all executables in common bin locations
+        local binary_paths
+        binary_paths=$(find -L "$real_path" -type f \( \
+                    \( -perm -111 -a \( \
+                        -path "*/bin/*" -o \
+                        -path "*/lib/*" -o \
+                        -path "*/sbin/*" -o \
+                        -path "*/libexec/bin/*" -o \
+                        -path "*/Frameworks/*/bin/*" -o \
+                        -path "*/opt/bin/*" \) \) -o \
+                    -name "*.a" -o \
+                    -name "*.dylib" -o \
+                    -name "*.so" \) 2>/dev/null)
+        
+       
+
+
+        if [[ -z "$binary_paths" ]]; then
+            color_echo "WARN" "⚠️ No executables found in $real_path"
+            return
+        fi
+
+        local has_arm=0
+        local has_x86=0
+
+        for binary_path in $binary_paths; do
+            if file "$binary_path" | grep -q "Mach-O universal binary"; then
+                color_echo "INFO" "✅ Fat binary (Universal) found for $package"
+                return
+            elif file "$binary_path" | grep -q "Mach-O 64-bit.*arm"; then
+                has_arm=1
+            elif file "$binary_path" | grep -q "Mach-O 64-bit.*x86"; then
+                has_x86=1
+            fi
+        done
+
+        if [[ $has_arm -eq 1 && $has_x86 -eq 0 ]]; then
+            color_echo "INFO" "🔹 Mach-O binary in ARM for $package"
+        elif [[ $has_x86 -eq 1 && $has_arm -eq 0 ]]; then
+            color_echo "INFO" "🔹 Mach-O binary in x86 for $package"
+        elif [[ $has_arm -eq 1 && $has_x86 -eq 1 ]]; then
+            color_echo "INFO" "✅ Package contains separate ARM and x86 binaries (not a Universal Binary) for $package"
+        else
+            color_echo "WARN" "❌ No valid Mach-O binaries detected for $package"
+        fi
+
+    else
+        if [[ "$brew_path" == "$ARM_BREW" ]]; then
+            color_echo "WARN" "✅ $package is not installed in ARM Homebrew."
+        else
+            color_echo "WARN" "✅ $package is not installed in X86 Homebrew."
+        fi
+    fi
+}
+
+brew_dual_check_binary() {
+    local packages=("$@")
+
+    for package in "${packages[@]}"; do
+        check_binary_arch "$ARM_BREW" "$package" "$ARM_ARCH"
+        check_binary_arch "$X86_BREW" "$package" "$X86_ARCH"
+    done
+}

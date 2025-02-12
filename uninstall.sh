@@ -48,6 +48,7 @@ remove_path() {
 
     if [[ ! -f "$shell_profile" ]]; then
         log "WARN" "Shell profile $shell_profile not found. Skipping PATH cleanup."
+        log "WARN" "Please manually remove '$BIN_DIR' from your PATH."
         return
     fi
 
@@ -58,6 +59,7 @@ remove_path() {
         log "INFO" "Removed PATH entry from $shell_profile. Backup saved as $shell_profile.bak"
     else
         log "INFO" "No PATH entry found in $shell_profile."
+        log "WARN" "Please manually remove '$BIN_DIR' from your PATH."
     fi
 }
 
