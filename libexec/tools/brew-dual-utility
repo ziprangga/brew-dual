@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 is_installed() {
     local brew_path="$1"
     local package="$2"
