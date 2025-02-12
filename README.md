@@ -1,4 +1,4 @@
-# 🍺 brew-dual-plugin (Dual Homebrew Management)
+# 🍺 brew-dual (Plugin for Dual Homebrew Management)
 
 I built this plugin to **easily manage packages** on **both Apple Silicon (`/opt/homebrew`) and Intel (`/usr/local`) Homebrew installations**. It’s a simple tool that I use personally, but I figured **someone else might find it useful too!**
 
