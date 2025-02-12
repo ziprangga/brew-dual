@@ -8,6 +8,25 @@ I built this plugin to **easily manage packages** on **both Apple Silicon (`/opt
 
 I often switch between **x86 and ARM architectures** on macOS, and managing Homebrew packages on both can be a hassle, especially when manage dependencies for dual architecture. This script **installs, uninstalls, update, upgrade and checks packages** across both environments automatically (check available command using **brew-dual help**), so I don’t have to think about it.
 
+## 🚀 Improvement
+
+On version **_1.0.1_** brew-dual support for **_check-binary_** package & **_merge-package_** to universal2
+
+**_Check binary package use_**
+
+```
+brew dual check-binary <package>
+```
+
+**_Check binary package use_**
+
+```
+brew dual merge-package <package>
+```
+
+by default merge package replace the package in arm homebrew, but you can change it with --merge-path=<path>
+with custom path, make package with universal2 not associated with homebrew
+
 ## 📌 Installation
 
 Before installing, ensure that **both Apple Silicon and x86 Homebrew are installed**. If not, the plugin will guide you through the setup when you run:
