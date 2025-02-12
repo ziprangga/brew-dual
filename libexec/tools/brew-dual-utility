@@ -147,16 +147,6 @@ get_package_full_path() {
         return 0
     fi
 
-    # If no versioned subdirectory is found, use brew --prefix
-    log "WARN" "⚠️ No installed versions found in '$real_path'. Trying brew --prefix..."
-    real_path=$($arch_cmd "$brew_path" --prefix "$package" 2>/dev/null)
-
-    if [[ -z "$real_path" || ! -d "$real_path" ]]; then
-        log "WARN" "❌ Package '$package' not found using brew --prefix either."
-        return 1
-    fi
-
-    log "INFO" "✅ Using fallback path from brew --prefix: $real_path"
-    echo "$real_path"
-    return 0
+    log "WARN" "⚠️ No installed versions found in '$real_path'. Not falling back to --prefix since it may be a symlink."
+    return 1
 }
