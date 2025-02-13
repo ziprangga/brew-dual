@@ -17,29 +17,33 @@ readonly X86_ARCH="arch -x86_64"
 readonly ARM_ARCH="arch -arm64"
 
 # ====== Logging & Message ======
-log() {
-    local color_reset="\033[0m"
-    local color_info="\033[0;32m"   
-    local color_warn="\033[0;33m"  
-    local color_error="\033[0;31m"  
-    local prefix="[$BASE_COMMAND]"
 
-    # Skip logging if DEBUG mode is off
-    if [[ "$DEBUG" != "true" && "$1" != "ERROR" ]]; then
-        return
+log() {
+    if [[ "$DEBUG" == "false" ]]; then
+     return
     fi
 
+    local color_reset="\033[0m"
+    local color_info="\033[0;32m"
+    local color_warn="\033[0;33m"
+    local color_error="\033[0;31m"
+    local prefix="[$BASE_COMMAND]"
+
+    local level="$1"
+    shift
+    local message="$@"
+
     # Determine log level color
-    case "$1" in
-        INFO)    echo -e "${prefix} ${color_info}$2${color_reset}" ;;
-        WARN)    echo -e "${prefix} ${color_warn}$2${color_reset}" ;;
-        ERROR)   echo -e "${prefix} ${color_error}$2${color_reset}" ;;
-        *)       echo -e "${prefix} $1" ;;
+    case "$level" in
+        INFO)  echo -e "${prefix} ${color_info}${message}${color_reset}" ;;
+        WARN)  echo -e "${prefix} ${color_warn}${message}${color_reset}" ;;
+        ERROR) echo -e "${prefix} ${color_error}${message}${color_reset}" ;;
+        *)     echo -e "${prefix} ${message}" ;;
     esac
 
-    # Verbose mode (always print additional debug info)
-    if [ "$VERBOSE" = true ]; then
-        echo -e "[VERBOSE] $1" >&2
+    # If VERBOSE is enabled, print additional debug info
+    if [[ "$VERBOSE" == "true" ]]; then
+        echo -e "[VERBOSE] ${prefix} ${level}: ${message}" >&2
     fi
 }
 
@@ -49,15 +53,17 @@ color_echo() {
     local color_warn="\033[0;33m"
     local color_error="\033[0;31m"
     local color_debug="\033[0;34m"
-    local message_type="$1"
-    shift 
 
+    local message_type="$1"
+    shift
+
+    # Ensure messages print even when DEBUG is off
     case "$message_type" in
-        INFO)    echo -e "${color_info}$@${color_reset}" ;;
-        WARN)    echo -e "${color_warn}$@${color_reset}" ;;
-        ERROR)   echo -e "${color_error}$@${color_reset}" ;;
-        DEBUG)   echo -e "${color_debug}$@${color_reset}" ;;
-        *)       echo -e "$@" ;;
+        INFO)  echo -e "${color_info}$@${color_reset}" ;;
+        WARN)  echo -e "${color_warn}$@${color_reset}" ;;
+        ERROR) echo -e "${color_error}$@${color_reset}" ;;
+        DEBUG) echo -e "${color_debug}$@${color_reset}" ;;
+        *) echo -e "$@" ;;
     esac
 }
 
@@ -245,7 +251,6 @@ check-binary_command(){
     fi
 
     brew_dual_check_binary "$@"
-
 }
 
 merge-package_command(){
@@ -257,7 +262,6 @@ merge-package_command(){
     fi
 
     brew_dual_merge "$output_path" "$@"
-
 }
 
 version_command() {
@@ -266,7 +270,7 @@ version_command() {
     color_echo "INFO" "Author: zi"
 }
 
-self-update_command() {
+self-update_command() {  
     if ! declare -F brew-dual-self-update >/dev/null; then
         log "Loading for update brew-dual"
         load_core_script "brew-dual-self-update"
@@ -276,7 +280,6 @@ self-update_command() {
 }
 
 check-homebrew_command() {
-
     if ! declare -F brew-dual-check-homebrew >/dev/null; then
         log "Loading for update brew-dual"
         load_core_script "brew-dual-check-homebrew"
@@ -297,6 +300,7 @@ help_command() {
     echo ""
     echo "Global Options:"
     echo "  --verbose                   Enable verbose output"
+    echo "  --debug                     Enable debugger output (must be first place)"
     echo "  --update                    Update brew-dual plugin"
     echo "  --merge-path=<path>         Used to specify a custom path for the merge-package command"
     echo "  --help                      Show this help message"

@@ -1,27 +1,27 @@
 #!/usr/bin/env bash
 
 brew_dual_self_update() {
-    log "INFO" "Checking for updates to brew-dual..."
+    color_echo "INFO" "Checking for updates to brew-dual..."
 
     local SCRIPT_DIR
-    SCRIPT_DIR="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && git rev-parse --show-toplevel 2>/dev/null || pwd)"
 
     # Ensure Git is installed
     if ! command -v git &>/dev/null; then
-        log "ERROR" "Git is not installed. Please install Git to update brew-dual."
+        color_echo "ERROR" "Git is not installed. Please install Git to update brew-dual."
         return 1
     fi
 
     # Ensure brew-dual is installed via Git
     if [[ ! -d "$SCRIPT_DIR/.git" ]]; then
-        log "WARN" "brew-dual is not installed via Git. Please update manually."
-        log "INFO" "Download the latest version from: $BREW_DUAL_REPO"
+        color_echo "WARN" "brew-dual is not installed via Git. Please update manually."
+        color_echo "INFO" "Download the latest version from: $BREW_DUAL_REPO"
         return 1
     fi
 
     # Check internet connectivity before fetching updates
     if ! curl -Is https://github.com/ | head -n 1 | grep -q "HTTP/"; then
-        log "ERROR" "Failed to reach GitHub. Please check your internet connection."
+        color_echo "ERROR" "Failed to reach GitHub. Please check your internet connection."
         return 1
     fi
 
@@ -30,9 +30,9 @@ brew_dual_self_update() {
 
     # Check if an update is needed
     if git -C "$SCRIPT_DIR" status -uno | grep -q "Your branch is behind"; then
-        log "INFO" "A new version is available! Updating brew-dual..."
+        color_echo "INFO" "A new version is available! Updating brew-dual..."
     else
-        log "INFO" "brew-dual is already up to date."
+        color_echo "INFO" "brew-dual is already up to date."
         return 0
     fi
 
@@ -43,22 +43,23 @@ brew_dual_self_update() {
     # Stash local changes if necessary
     local STASH_APPLIED=0
     if ! git -C "$SCRIPT_DIR" diff --quiet; then
-        log "WARN" "You have local changes. Stashing them before updating..."
+        color_echo "WARN" "You have local changes. Stashing them before updating..."
         git -C "$SCRIPT_DIR" stash push -m "Auto-stash before update"
         STASH_APPLIED=1
     fi
 
     # Perform update with rebase
     if git -C "$SCRIPT_DIR" pull --rebase origin "$CURRENT_BRANCH"; then
-        log "INFO" "✅ Updated brew-dual successfully!"
+        color_echo "INFO" "✅ Updated brew-dual successfully!"
     else
-        log "ERROR" "Failed to update brew-dual. Please check for local conflicts."
+        color_echo "ERROR" "Failed to update brew-dual. Please check for local conflicts."
         return 1
     fi
 
     # Restore stashed changes if applicable
     if [[ "$STASH_APPLIED" -eq 1 ]]; then
-        log "INFO" "Restoring your previous changes..."
-        git -C "$SCRIPT_DIR" stash pop || log "WARN" "Failed to restore stashed changes."
+        color_echo "INFO" "Restoring your previous changes..."
+        git -C "$SCRIPT_DIR" stash pop || color_echo "WARN" "Failed to restore stashed changes."
     fi
+
 }
