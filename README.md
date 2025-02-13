@@ -203,7 +203,7 @@ source ~/.bashrc  # If using bash
 
 ## 🛠️ Contributing & Development
 
-This project is a **work in progress**, built for personal use. However, contributions are welcome! If you find any bugs or have ideas for improvements, feel free to **reach out** or **open a pull request**.
+This project was originally built for personal use, but anyone can use it, and contributions are always welcome! If you find any bugs or have ideas for improvements, feel free to **reach out** or **open a pull request**.
 
 ---
 
