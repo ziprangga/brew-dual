@@ -66,7 +66,7 @@ DEBUG=false
 DRY_RUN=false
 MERGE_PATH=""
 readonly BASE_COMMAND="brew-dual"
-readonly commands=("install" "uninstall" "update" "upgrade" "list" "pin" "unpin" "outdated" "info" "check-binary" "merge-package" "version" "check-homebrew" "uninstall-homebrew" "help")
+readonly commands=("install" "uninstall" "update" "upgrade" "list" "pin" "unpin" "outdated" "info" "check-binary" "merge-package" "version" "check-homebrew" "uninstall-homebrew" "x86" "arm" "help")
 readonly X86_ARCH="arch -x86_64"
 readonly ARM_ARCH="arch -arm64"
 
@@ -297,6 +297,23 @@ uninstall-homebrew_command() {
     fi
 
     brew_dual_uninstall_homebrew
+}
+
+x86_command() {
+    if ! declare -F brew-dual-single-homebrew >/dev/null; then
+        log "Loading for single homebrewl"
+        load_core_script "brew-dual-single-homebrew"
+    fi
+
+    x86_homebrew "$@"
+}
+arm_command() {
+    if ! declare -F brew-dual-single-homebrew >/dev/null; then
+        log "Loading for single homebrewl"
+        load_core_script "brew-dual-single-homebrew"
+    fi
+
+    arm_homebrew "$@"
 }
 
 help_command() {

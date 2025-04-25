@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+x86_homebrew(){
+    $X86_ARCH "$X86_BREW" "$@"
+}
+
+arm_homebrew(){
+    $ARM_ARCH "$ARM_BREW" "$@"
+}

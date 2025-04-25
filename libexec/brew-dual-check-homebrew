@@ -22,15 +22,28 @@ brew_dual_check_homebrew() {
     if [[ "$missing_x86" == true && "$missing_arm" == true ]]; then
         read -p "Both x86 and ARM Homebrew are missing. Install both? (y/n/c to cancel): " choice
         if [[ "$choice" == "y" || "$choice" == "Y" ]]; then
-            color_echo "INFO" "Installing ARM Homebrew..."
-            $ARM_ARCH /bin/bash -c "$(curl -fsSL $HOMEBREW_INSTALL_SCRIPT)"
+            read -p "Would you like to (1) clone ARM Homebrew into the plugin directory? or (2) use system ARM Homebrew (1/2/c to cancel): " install_choice
+            if [[ "$install_choice" == "1" ]]; then
+                color_echo "INFO" "Cloning ARM Homebrew into plugin directory..."
+                git clone https://github.com/Homebrew/brew "$ARM_BREW_DIR"
+                "$ARM_BREW_DIR/bin/brew" update --force --quiet
+            elif [[ "$install_choice" == "2" ]]; then
+                color_echo "INFO" "Installing system ARM Homebrew..."
+                $ARM_ARCH /bin/bash -c "$(curl -fsSL $HOMEBREW_INSTALL_SCRIPT)"
+            elif [[ "$install_choice" == "c" || "$install_choice" == "C" ]]; then
+                color_echo "INFO" "Installation process cancelled."
+                exit 0
+            else
+                color_echo "ERROR" "Invalid choice. Exiting..."
+                exit 1
+            fi
 
             # Prompt user to choose installation method for x86 Homebrew
             read -p "Would you like to (1) clone Homebrew into the plugin directory? or (2) use system x86 Homebrew (1/2/c to cancel): " install_choice
             if [[ "$install_choice" == "1" ]]; then
                 color_echo "INFO" "Cloning x86 Homebrew into plugin directory..."
-                git clone https://github.com/Homebrew/brew "$BREW_DUAL_ROOT/brew_x86"
-                "$BREW_DUAL_ROOT/brew_x86/bin/brew" update --force --quiet              
+                git clone https://github.com/Homebrew/brew "$X86_BREW_DIR"
+                "$X86_BREW_DIR/bin/brew" update --force --quiet              
             elif [[ "$install_choice" == "2" ]]; then
                 color_echo "INFO" "Installing system x86 Homebrew under Rosetta..."
                 $X86_ARCH /bin/bash -c "$(curl -fsSL $HOMEBREW_INSTALL_SCRIPT)"
@@ -58,8 +71,8 @@ brew_dual_check_homebrew() {
                 read -p "Would you like to (1) clone Homebrew into the plugin directory? or (2) use system x86 Homebrew (1/2/c to cancel): " install_choice
                 if [[ "$install_choice" == "1" ]]; then
                     color_echo "INFO" "Cloning x86 Homebrew into plugin directory..."
-                    git clone https://github.com/Homebrew/brew "$BREW_DUAL_ROOT/brew_x86"
-                    "$BREW_DUAL_ROOT/brew_x86/bin/brew" update --force --quiet                  
+                    git clone https://github.com/Homebrew/brew "$X86_BREW_DIR"
+                    "$X86_BREW_DIR/bin/brew" update --force --quiet                  
                 elif [[ "$install_choice" == "2" ]]; then
                     color_echo "INFO" "Installing system x86 Homebrew under Rosetta..."
                     $X86_ARCH /bin/bash -c "$(curl -fsSL $HOMEBREW_INSTALL_SCRIPT)"
@@ -81,8 +94,21 @@ brew_dual_check_homebrew() {
         if [[ "$missing_arm" == true ]]; then
             read -p "ARM Homebrew is missing. Install it? (y/n/c to cancel): " choice
             if [[ "$choice" == "y" || "$choice" == "Y" ]]; then
-                color_echo "INFO" "Installing ARM Homebrew..."
-                $ARM_ARCH /bin/bash -c "$(curl -fsSL $HOMEBREW_INSTALL_SCRIPT)"
+                read -p "Would you like to (1) clone ARM Homebrew into the plugin directory? or (2) use system ARM Homebrew (1/2/c to cancel): " install_choice
+                if [[ "$install_choice" == "1" ]]; then
+                    color_echo "INFO" "Cloning ARM Homebrew into plugin directory..."
+                    git clone https://github.com/Homebrew/brew "$ARM_BREW_DIR"
+                    "$ARM_BREW_DIR/bin/brew" update --force --quiet
+                elif [[ "$install_choice" == "2" ]]; then
+                    color_echo "INFO" "Installing system ARM Homebrew..."
+                    $ARM_ARCH /bin/bash -c "$(curl -fsSL $HOMEBREW_INSTALL_SCRIPT)"
+                elif [[ "$install_choice" == "c" || "$install_choice" == "C" ]]; then
+                    color_echo "INFO" "Installation process cancelled."
+                    exit 0
+                else
+                    color_echo "ERROR" "Invalid choice. Exiting..."
+                    exit 1
+                fi
             elif [[ "$choice" == "c" || "$choice" == "C" ]]; then
                 color_echo "INFO" "Installation process cancelled."
                 exit 0
@@ -93,16 +119,4 @@ brew_dual_check_homebrew() {
     fi
 
     color_echo "INFO" "Dual Homebrew setup verified"
-
-    # Display instructions for configuring shell environment
-    cat <<EOF
-For safety ensure your profile file (\`~/.zprofile\`, \`~/.zshrc\`, \`~/.bash_profile\`, or \`~/.bashrc\`) includes:
-
-if [ "\$(uname -m)" = "arm64" ]; then
-    eval "\$(/opt/homebrew/bin/brew shellenv)"
-else
-    eval "\$(/usr/local/bin/brew shellenv)"
-fi
-
-EOF
 }

@@ -27,7 +27,7 @@ brew_dual_uninstall_homebrew() {
                 if [[ "$X86_BREW" == '/usr/local/bin/brew' ]]; then
                     $X86_ARCH /bin/bash -c "$(curl -fsSL $HOMEBREW_UNINSTALL_SCRIPT)"
                 else 
-                    rm -rf "$X86_BREW"
+                    rm -rf "$X86_BREW_DIR"
                 fi
                 ;;
             [nN]) 

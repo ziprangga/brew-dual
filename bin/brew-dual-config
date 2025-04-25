@@ -2,26 +2,34 @@
 BREW_DUAL_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 X86_BREW_DIR="$BREW_DUAL_ROOT/brew_x86"
-X86_BREW="$X86_BREW_DIR/bin/brew"
-ARM_BREW="/opt/homebrew/bin/brew"
+ARM_BREW_DIR="$BREW_DUAL_ROOT/brew_arm"
 
 check_and_setup_x86_brew() {
-    if [[ -x "$X86_BREW" ]]; then
-        color_echo "INFO" "Using Homebrew from plugin directory: $X86_BREW"
-    else
-        color_echo "WARN" "Homebrew not found in plugin directory. Using fallback location: /usr/local/bin/brew"
+    if [[ -x "$X86_BREW_DIR/bin/brew" ]]; then
+        X86_BREW="$X86_BREW_DIR/bin/brew"
+        color_echo "INFO" "Using x86 Homebrew from plugin directory: $X86_BREW"
+    elif [[ -x "/usr/local/bin/brew" ]]; then
         X86_BREW="/usr/local/bin/brew"
-        color_echo "WARN" "Please run 'brew-dual <check-homebrew>' to ensure Homebrew is correctly installed."
+        color_echo "INFO" "Using system x86 Homebrew: $X86_BREW"
+    else
+        color_echo "ERROR" "x86 Homebrew not found. Fallback using homebrew default path: /usr/local/bin/brew"
+        X86_BREW="/usr/local/bin/brew"
+        color_echo "WARN" "Please run 'brew-dual check-homebrew' to install it."
+        
     fi
 }
 
 check_and_setup_arm_brew() {
-    if [[ -x "$ARM_BREW" ]]; then
-        color_echo "INFO" "Using ARM Homebrew from: $ARM_BREW"
+    if [[ -x "$ARM_BREW_DIR/bin/brew" ]]; then
+        ARM_BREW="$ARM_BREW_DIR/bin/brew"
+        color_echo "INFO" "Using ARM Homebrew from plugin directory: $ARM_BREW"
+    elif [[ -x "/opt/homebrew/bin/brew" ]]; then
+        ARM_BREW="/opt/homebrew/bin/brew"
+        color_echo "INFO" "Using system ARM Homebrew: $ARM_BREW"
     else
-        color_echo "WARN" "ARM Homebrew not found at expected location. Please install it or specify the path."
-        color_echo "WARN" "Please run 'brew-dual-check-homebrew' to ensure Homebrew is correctly installed."
-        exit 1
+        color_echo "ERROR" "ARM Homebrew not found. Fallback using homebrew default path: /opt/homebrew/bin/brew"
+        ARM_BREW="/opt/homebrew/bin/brew"
+        color_echo "WARN" "Please run 'brew-dual check-homebrew' to install it."
     fi
 }
 
