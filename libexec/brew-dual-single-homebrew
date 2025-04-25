@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 
-x86_homebrew(){
-    $X86_ARCH "$X86_BREW" "$@"
+arm_homebrew(){
+    color_echo "INFO" "list ARM Homebrew installed package"
+    $ARM_ARCH "$ARM_BREW" "$@"
 }
 
-arm_homebrew(){
-    $ARM_ARCH "$ARM_BREW" "$@"
+x86_homebrew(){
+    color_echo "INFO" "list X86 Homebrew installed package"
+    $X86_ARCH "$X86_BREW" "$@"
 }
