@@ -1,9 +1,0 @@
-#!/usr/bin/env bash
-
-X86_BREW="/usr/local/bin/brew"
-readonly X86_ARCH="arch -x86_64"
-
-main(){
-    $X86_ARCH "$X86_BREW" "$@"
-}
-main "$@"
