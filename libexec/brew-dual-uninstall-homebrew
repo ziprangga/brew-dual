@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+
+brew_dual_uninstall_homebrew() {
+    log "INFO" "Check installed dual Homebrew"
+    local installed_x86=false
+    local installed_arm=false
+
+    if [[ -x "$X86_BREW" ]]; then
+        log "INFO" "x86 Homebrew found at $X86_BREW"
+        installed_x86=true
+    else
+        log "WARN" "x86 Homebrew not found or not executable at $X86_BREW"
+    fi
+
+    if [[ -x "$ARM_BREW" ]]; then
+        log "INFO" "ARM Homebrew found at $ARM_BREW"
+        installed_arm=true
+    else
+        log "WARN" "ARM Homebrew not found or not executable at $ARM_BREW"
+    fi
+
+    if [[ "$installed_x86" == true ]]; then
+        read -p "x86 Homebrew found at $X86_BREW. Do you want to uninstall it? (y/n/c to cancel): " choice
+        case "$choice" in
+            [yY]) 
+                color_echo "INFO" "Uninstalling x86 Homebrew..."
+                if [[ "$X86_BREW" == '/usr/local/bin/brew' ]]; then
+                    $X86_ARCH /bin/bash -c "$(curl -fsSL $HOMEBREW_UNINSTALL_SCRIPT)"
+                else 
+                    rm -rf "$X86_BREW"
+                fi
+                ;;
+            [nN]) 
+                color_echo "INFO" "Skipping x86 Homebrew uninstallation."
+                ;;
+            [cC]) 
+                color_echo "INFO" "Uninstallation process cancelled."
+                exit 0
+                ;;
+            *) 
+                color_echo "ERROR" "Invalid choice. Please enter 'y', 'n', or 'c'."
+                exit 1
+                ;;
+        esac
+    fi
+
+    if [[ "$installed_arm" == true ]]; then
+        read -p "ARM Homebrew found at $ARM_BREW. Do you want to uninstall it? (y/n/c to cancel): " choice
+        case "$choice" in
+            [yY]) 
+                color_echo "INFO" "Uninstalling ARM Homebrew..."
+                if [[ "$ARM_BREW" == '/opt/homebrew/bin/brew' ]]; then
+                    $ARM_ARCH /bin/bash -c "$(curl -fsSL $HOMEBREW_UNINSTALL_SCRIPT)"
+                else 
+                    rm -rf "$ARM_BREW"
+                fi
+                ;;
+            [nN]) 
+                color_echo "INFO" "Skipping ARM Homebrew uninstallation."
+                ;;
+            [cC]) 
+                color_echo "INFO" "Uninstallation process cancelled."
+                exit 0
+                ;;
+            *) 
+                color_echo "ERROR" "Invalid choice. Please enter 'y', 'n', or 'c'."
+                exit 1
+                ;;
+        esac
+    fi
+
+    color_echo "INFO" "Uninstallation process complete."
+}

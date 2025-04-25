@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+BREW_DUAL_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+X86_BREW_DIR="$BREW_DUAL_ROOT/brew_x86"
+X86_BREW="$X86_BREW_DIR/bin/brew"
+ARM_BREW="/opt/homebrew/bin/brew"
+
+check_and_setup_x86_brew() {
+    if [[ -x "$X86_BREW" ]]; then
+        color_echo "INFO" "Using Homebrew from plugin directory: $X86_BREW"
+    else
+        color_echo "WARN" "Homebrew not found in plugin directory. Using fallback location: /usr/local/bin/brew"
+        X86_BREW="/usr/local/bin/brew"
+        color_echo "WARN" "Please run 'brew-dual <check-homebrew>' to ensure Homebrew is correctly installed."
+    fi
+}
+
+check_and_setup_arm_brew() {
+    if [[ -x "$ARM_BREW" ]]; then
+        color_echo "INFO" "Using ARM Homebrew from: $ARM_BREW"
+    else
+        color_echo "WARN" "ARM Homebrew not found at expected location. Please install it or specify the path."
+        color_echo "WARN" "Please run 'brew-dual-check-homebrew' to ensure Homebrew is correctly installed."
+        exit 1
+    fi
+}
+
+brew_dual_config_path() {
+    check_and_setup_arm_brew
+    check_and_setup_x86_brew
+}
