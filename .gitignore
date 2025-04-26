@@ -1,2 +1,5 @@
 .DS_Store
 brew_x86/
+brew_arm/
+cache/
+tempdir/

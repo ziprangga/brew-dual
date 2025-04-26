@@ -12,6 +12,8 @@ I often switch between **x86 and ARM architectures** on macOS, and managing Home
 
 On version **_1.0.1_** brew-dual support for **_check-binary_** package & **_merge-package_** to universal2
 
+on version **_1.0.1_** brew-dual restructure with core function and add feature to custom homebrew installation
+
 **_Check binary package use_**
 
 ```
