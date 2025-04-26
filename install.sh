@@ -3,8 +3,9 @@
 # ====== Global Variables ======
 GITHUB_REPO="https://github.com/ziprangga/brew-dual.git"
 INSTALL_DIR="$HOME/.config/brew-dual"
-BIN_DIR="$INSTALL_DIR/bin"
-LIBEXEC_DIR="$INSTALL_DIR/libexec"
+CORE_DIR="$INSTALL_DIR/core"
+BIN_DIR="$CORE_DIR/bin"
+LIBEXEC_DIR="$CORE_DIR/libexec"
 
 # ====== Logging Function ======
 log() {
@@ -54,15 +55,16 @@ install_plugin() {
     fi
 
     # Ensure bin and libexec directories exist
-    mkdir -p "$BIN_DIR" "$LIBEXEC_DIR"
+    if [[ ! -d "$BIN_DIR" || ! -d "$LIBEXEC_DIR" ]]; then
+        log "ERROR" "brew-dual repository structure is invalid (missing core/bin or core/libexec)"
+        exit 1
+    fi
 
     # Ensure the scripts are executable if they exist
-    [[ -f "$BIN_DIR/brew-dual" ]] && chmod +x "$BIN_DIR/brew-dual"
-    [[ -f "$BIN_DIR/brew-arm" ]] && chmod +x "$BIN_DIR/brew-arm"
-    [[ -f "$BIN_DIR/brew-x86" ]] && chmod +x "$BIN_DIR/brew-x86"
+    find "$BIN_DIR" -type f -exec chmod +x {} \;
 
     # Make all libexec scripts executable
-    [[ -d "$LIBEXEC_DIR" ]] && find "$LIBEXEC_DIR" -type f -exec chmod +x {} \;
+    find "$LIBEXEC_DIR" -type f -exec chmod +x {} \;
 }
 
 # ====== Ensure ~/brew-dual/bin is in PATH ======
@@ -82,7 +84,7 @@ ensure_path() {
         esac
 
         # Prevent duplicate PATH entries
-        if ! grep -q 'export PATH="'"$BIN_DIR"':$PATH"' "$shell_profile"; then
+        if ! grep -qF "$BIN_DIR" "$shell_profile"; then
             echo 'export PATH="'"$BIN_DIR"':$PATH"' >> "$shell_profile"
             log "INFO" "Run 'source $shell_profile' to apply changes."
         else

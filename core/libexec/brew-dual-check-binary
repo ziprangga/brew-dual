@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-source "$(dirname "${BASH_SOURCE[0]}")/../libexec/tools/brew-dual-utility"
+source "$(dirname "${BASH_SOURCE[0]}")/tools/brew-dual-utility"
 
 check_binary_arch() {
     local brew_path="$1"

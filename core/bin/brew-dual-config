@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-BREW_DUAL_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+BREW_DUAL_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
 X86_BREW_DIR="$BREW_DUAL_ROOT/brew_x86"
 ARM_BREW_DIR="$BREW_DUAL_ROOT/brew_arm"

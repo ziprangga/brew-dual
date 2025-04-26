@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-source "$(dirname "${BASH_SOURCE[0]}")/../libexec/tools/brew-dual-utility"
+source "$(dirname "${BASH_SOURCE[0]}")/tools/brew-dual-utility"
 
 merge_to_fat_binary() {
     local arm_binary="$1"

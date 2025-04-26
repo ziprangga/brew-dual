@@ -2,7 +2,8 @@
 
 # ====== Global Variables ======
 INSTALL_DIR="$HOME/.config/brew-dual"
-BIN_DIR="$INSTALL_DIR/bin"
+CORE_DIR="$INSTALL_DIR/core"
+BIN_DIR="$CORE_DIR/bin"
 
 # ====== Logging Function ======
 log() {
@@ -52,10 +53,10 @@ remove_path() {
         return
     fi
 
-    if grep -q "$BIN_DIR" "$shell_profile"; then
+    if grep -qF "$BIN_DIR" "$shell_profile"; then
         # Backup the original profile before modifying
         cp "$shell_profile" "$shell_profile.bak"
-        sed -i '' "/export PATH=.*$BIN_DIR/d" "$shell_profile"
+        sed -i '' "\|$BIN_DIR|d" "$shell_profile"
         log "INFO" "Removed PATH entry from $shell_profile. Backup saved as $shell_profile.bak"
     else
         log "INFO" "No PATH entry found in $shell_profile."
